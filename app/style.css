@@ -1,0 +1,8 @@
+body{
+    background: rgb(128, 128, 128);
+}
+
+.questions-creator{
+    display: flex;
+    gap: 5px;
+}
