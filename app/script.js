@@ -36,7 +36,19 @@
 
 let api = 'https://opentdb.com/api_config.php'
 
-let minMaxQuestions = [1, 50]
+let gameInfo = {
+    currentQuestion: 0,
+    gameType: "Any Category",
+    difficulty: "Any Difficulty",
+    questions: []
+}
+
+let scoreTrack = {
+    answeredQ: [],
+    streak: 0,
+}
+
+let minMaxQuestions = [5, 50]
 
 let credits = {
     names: ["Oskaras Venzlauskas", "Justas Brazaitis", "Kajus Podžiulaitis"],
@@ -115,12 +127,15 @@ const createSettings = () => {
     createDiv.classList.add('questions-creator')
     let titles = ["Number of Questions", "Categories:", "Difficulty:", "Select Type:"]
     let id = ["number-questions", "category", "difficulty", "type"]
+    //TEMP FIX: THE API DOESNT HAVE ENOUGH QUESTIONS AND ANSWERS FOR SOME CATEGORIES SO FOR NOW ANY WILL DO
+    titles = ["Number of Questions", "Difficulty:", "Select Type:"]
+    id = ["number-questions", "difficulty", "type"]
     let childDiv
     let text
     for(let o = 0; o < titles.length; o++){
         text = document.createElement('p')
         text.innerHTML = `${titles[o]}`
-        if(o == 0){
+        if(id[o] == "number-questions"){
             childDiv = document.createElement('input')
             childDiv.id = id[o]
             childDiv.type = `number`
@@ -128,7 +143,7 @@ const createSettings = () => {
         }else{
             childDiv = document.createElement('select')
         }
-        if(o == 1){
+        if(id[o] == "category"){
             childDiv.id = id[o]
             for(let i = 0; i < categories.length; i++){
                 if(categories[i].name !== undefined){
@@ -139,14 +154,14 @@ const createSettings = () => {
                     childDiv.innerHTML += `<option value="${categories[i][1]}">${categories[i][0]}</option>`
                 }
             }
-        }else if(o == 2){
+        }else if(id[o] == "difficulty"){
             childDiv = document.createElement('select')
             childDiv.id = id[o]
             for(let i = 0; i < difficulties.length; i++){
                 childDiv.innerHTML += `<option value="${difficulties[i][1]}">${difficulties[i][0]}</option>`
             }
             createDiv.appendChild(childDiv)
-        }else if(o == 3){
+        }else if(id[o] == "type"){
             childDiv = document.createElement('select')
             childDiv.id = id[o]
             for(let i = 0; i < types.length; i++){
@@ -169,9 +184,12 @@ const createQuestions = async () => {
     let link = "https://opentdb.com/api.php?"
     let id = ["number-questions", "category", "difficulty", "type"]
     let suffix = ["amount", "category", "difficulty", "type"]
+    //TEMP FIX: THE API DOESNT HAVE ENOUGH QUESTIONS AND ANSWERS FOR SOME CATEGORIES SO FOR NOW ANY WILL DO
+    id = ["number-questions", "difficulty", "type"]
+    suffix = ["amount", "difficulty", "type"]
     let text
     for(let i = 0; i < id.length; i++){
-        if(i == 0){
+        if(id[i] == "number-questions"){
             text = document.querySelector(`#${id[i]}`)
         }else{
             text = document.querySelector(`#${id[i]}`).selectedOptions[0]
@@ -181,7 +199,132 @@ const createQuestions = async () => {
         }
     }
     let output = await getAPIInfo(link)
-    console.log(output)
+    doGameInfo(output)
+    createQuestion()
+}
+
+const shuffleArray = (array) => {
+    for(let i = array.length - 1; i > 0; i--){
+        const random = Math.floor(Math.random() * (i + 1));
+        [array[i], array[random]] = [array[random], array[i]];
+    }
+    return array;
+}
+
+const doGameInfo = (data) => {
+    // gameInfo.gameType = categories[document.querySelector(`#category`).value][0]
+    // gameInfo.difficulty = difficulties[document.querySelector(`#difficulty`).value][0]
+    for(let i = 0; i < data.results.length; i++){
+        let doAnswers = data.results[i].incorrect_answers
+        doAnswers.push(data.results[i].correct_answer)
+        if(data.results[i].type !== "boolean"){
+            shuffleArray(doAnswers)
+        }else{
+            doAnswers = ["True", "False"]
+        }
+        let object = {
+            category: data.results[i].category,
+            difficulty: data.results[i].difficulty,
+            question: {
+                text: data.results[i].question,
+                answer: doAnswers,
+                correct: data.results[i].correct_answer,
+            }
+        }
+        gameInfo.questions.push(object)
+    }
+    console.log(gameInfo)
+}
+
+const createQuestion = () => {
+    document.querySelector('main').innerHTML = ``
+    if(gameInfo.currentQuestion == gameInfo.questions.length){
+        return
+    }
+    let current = gameInfo.questions[gameInfo.currentQuestion]
+
+    let quesCont = document.createElement('div')
+    quesCont.classList.add('question-container')
+    quesCont.innerHTML = `
+        <h1 question-text>${current.question.text}</h1>
+        <p>Question: ${gameInfo.currentQuestion + 1}/${gameInfo.questions.length}</p>
+        <p>Category: ${current.category}</p>
+        <p>Difficulty: ${current.difficulty}</p>`
+    
+    let questionsDiv = document.createElement('div')
+    questionsDiv.classList.add('questions')
+    for(let i = 0; i < current.question.answer.length; i++){
+        let question = document.createElement('div')
+        question.classList.add('question-query', 'clickable', `quest-${i}`)
+        question.innerHTML = `${current.question.answer[i]}`
+        questionsDiv.appendChild(question)
+    }
+    quesCont.appendChild(questionsDiv)
+    document.querySelector('main').appendChild(quesCont)
+    document.querySelector('.question-container').addEventListener('click', (event) => {
+        if(event.target.classList[1] == "clickable"){
+            checkQuestion(event.target.classList[2].split('quest-')[1])
+            gameInfo.currentQuestion++
+        }
+    })
+}
+
+const checkQuestion = (data) => {
+    let current = gameInfo.questions[gameInfo.currentQuestion]
+    let correctAns
+    for(let i = 0; i < current.question.answer.length; i++){
+        if(current.question.answer[i] == current.question.correct){
+            correctAns = i
+        }
+    }
+    for(let i = 0; i < current.question.answer.length; i++){
+        let div = document.querySelector('.questions').children[i]
+        div.classList.toggle('clickable')
+        if(i == correctAns){
+            // div.style.filter = `hue-rotate(90deg)`
+            div.style.background = `rgb(0, 128, 0)`
+        }else{
+            div.style.filter = `grayscale(0) brightness(0.75)`
+            div.style.background = `rgb(128, 0, 0)`
+        }
+    }
+    let audio
+    if(data == correctAns){
+        let score
+        let multiplier
+        if(current.difficulty == "hard"){
+            multiplier = 3
+        }else if(current.difficulty == "normal"){
+            multiplier = 2
+        }else{
+            multiplier = 1
+        }
+        scoreTrack.streak++
+        score = 50 * multiplier + (10 * scoreTrack.streak)
+        scoreTrack.answeredQ.push(score)
+        audio = new Audio('files/sounds/tiq/correct.mp3')
+    }else{
+        scoreTrack.streak = 0
+        scoreTrack.answeredQ.push(0)
+        audio = new Audio('files/sounds/tiq/incorrect.mp3')
+    }
+    audio.play()
+    doScoreShow()
+    let nextQuestion = document.createElement('button')
+    nextQuestion.id = `next-question`
+    nextQuestion.innerHTML = `NEXT QUESTION`
+    document.querySelector('.question-container').appendChild(nextQuestion)
+    document.querySelector('#next-question').addEventListener('click', (event) => {
+        createQuestion()
+    })
+}
+
+const doScoreShow = () => {
+    let totalScore = 0
+    for(let i = 0; i < scoreTrack.answeredQ.length; i++){
+        totalScore += scoreTrack.answeredQ[i]
+    }
+    document.querySelector('footer').innerHTML = `Total Score: ${totalScore}, Streak: ${scoreTrack.streak}`
 }
 
 const limitInput = (num) => {
@@ -199,23 +342,6 @@ createSettings()
 document.querySelector('#create-api-text').addEventListener('click', (event) => {
     createQuestions()
 })
-
 document.querySelector('#number-questions').addEventListener('input', (event) => {
     event.target.value = limitInput(event.target.value)
 })
-
-
-
-// const socket = new WebSocket('ws://localhost:8080')
-
-// socket.onmessage = ({data}) => {
-//     console.log('Message from server: ', data)
-// }
-
-// document.querySelector('button').onClick = () => {
-//     socket.send('hello')
-// }
-
-// const sendMessage = () => {
-//     console.log('button clicked')
-// }
