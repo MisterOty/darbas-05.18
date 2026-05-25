@@ -30,6 +30,8 @@
 
 //IDEA 1#:
 //If quiz difficulty is set to Expert, make design like impossible quiz
+//IDEA 2#:
+//Make a emoji wheel where you can taunt other players
 
 // BUG 1#:
 // Some categories doesnt have much or any boolean questions
@@ -49,7 +51,21 @@ let scoreTrack = {
     streak: 0,
 }
 
+let players = [
+    {
+        name: "Lorem Ipsom",
+        scoreTrack: {
+            answeredQ: [],
+            lngstS: 0,
+            streak: 0,
+        }
+    }
+]
+
 let minMaxQuestions = [1, 50]
+
+let timerTime = 0
+let timerInterval
 
 let credits = {
     names: ["Oskaras Venzlauskas", "Justas Brazaitis", "Kajus Podžiulaitis"],
@@ -107,9 +123,6 @@ let types = [
     ["True or False", "boolean"]
 ]
 
-let timerTime = 0
-let timerInterval
-
 //API FETCHING FUNCTION
 
 const getAPIInfo = async (link) => {
@@ -125,15 +138,19 @@ const getAPIInfo = async (link) => {
     }
 }
 
-const createSettings = () => {
+// const createStartMenu = () => {
+
+// }
+
+const createRoom = () => {
     const main = document.querySelector('main')
     let createDiv = document.createElement('div')
     createDiv.classList.add('questions-creator')
     let titles = ["Number of Questions", "Categories:", "Difficulty:", "Select Type:"]
     let id = ["number-questions", "category", "difficulty", "type"]
     //TEMP FIX: THE API DOESNT HAVE ENOUGH QUESTIONS AND ANSWERS FOR SOME CATEGORIES SO FOR NOW ANY WILL DO
-    titles = ["Number of Questions", "Difficulty:", "Select Type:"]
-    id = ["number-questions", "difficulty", "type"]
+    // titles = ["Number of Questions", "Difficulty:", "Select Type:"]
+    // id = ["number-questions", "difficulty", "type"]
     let childDiv
     let text
     for(let o = 0; o < titles.length; o++){
@@ -189,8 +206,8 @@ const createQuestions = async () => {
     let id = ["number-questions", "category", "difficulty", "type"]
     let suffix = ["amount", "category", "difficulty", "type"]
     //TEMP FIX: THE API DOESNT HAVE ENOUGH QUESTIONS AND ANSWERS FOR SOME CATEGORIES SO FOR NOW ANY WILL DO
-    id = ["number-questions", "difficulty", "type"]
-    suffix = ["amount", "difficulty", "type"]
+    // id = ["number-questions", "difficulty", "type"]
+    // suffix = ["amount", "difficulty", "type"]
     let text
     for(let i = 0; i < id.length; i++){
         if(id[i] == "number-questions"){
@@ -335,6 +352,8 @@ const checkQuestion = (data) => {
     })
 }
 
+const showLdrBrd = () => {}
+
 const createEndScreen = () => {
     let totalScore = 0
     let questionsA = 0
@@ -374,7 +393,7 @@ const scoreCalc = (correct, current, clk_qst) => {
         if(scoreTrack.lngstS < scoreTrack.streak){
             scoreTrack.lngstS = scoreTrack.streak
         }
-        score = 50 * multiplier + (10 * scoreTrack.streak)
+        score = 50 * multiplier + (10 * scoreTrack.streak) + (10 * timerTime)
         scoreTrack.answeredQ.push(score)
         audio = new Audio('files/sounds/tiq/correct.mp3')
     }else{
@@ -404,7 +423,7 @@ const limitInput = (num) => {
     return number
 }
 
-createSettings()
+createRoom()
 
 document.querySelector('#create-api-text').addEventListener('click', (event) => {
     createQuestions()
