@@ -45,10 +45,11 @@ let gameInfo = {
 
 let scoreTrack = {
     answeredQ: [],
+    lngstS: 0,
     streak: 0,
 }
 
-let minMaxQuestions = [5, 50]
+let minMaxQuestions = [1, 50]
 
 let credits = {
     names: ["Oskaras Venzlauskas", "Justas Brazaitis", "Kajus Podžiulaitis"],
@@ -105,6 +106,9 @@ let types = [
     ["Multiple Choice", "multiple"],
     ["True or False", "boolean"]
 ]
+
+let timerTime = 0
+let timerInterval
 
 //API FETCHING FUNCTION
 
@@ -236,11 +240,38 @@ const doGameInfo = (data) => {
     console.log(gameInfo)
 }
 
+const doTimer = () => {
+    let current = gameInfo.questions[gameInfo.currentQuestion].difficulty
+    let timer = 15
+    if(current == "hard"){
+        timerTime = timer * 3
+    }else if(current == "normal"){
+        timerTime = timer * 2
+    }else{
+        timerTime = timer * 1
+    }
+    timerCalc()
+    timerInterval = setInterval(() => {
+        timerCalc()
+    }, 1000)
+}
+
+const timerCalc = () => {
+    document.querySelector('.timer').innerHTML = `Time: ${timerTime}`
+    if(timerTime == 0){
+        checkQuestion(false)
+        clearInterval(timerInterval)
+        gameInfo.currentQuestion++
+    }
+    timerTime--
+}
+
 const createQuestion = () => {
-    document.querySelector('main').innerHTML = ``
     if(gameInfo.currentQuestion == gameInfo.questions.length){
+        createEndScreen()
         return
     }
+    document.querySelector('main').innerHTML = ``
     let current = gameInfo.questions[gameInfo.currentQuestion]
 
     let quesCont = document.createElement('div')
@@ -249,6 +280,7 @@ const createQuestion = () => {
         <h1 question-text>${current.question.text}</h1>
         <p>Question: ${gameInfo.currentQuestion + 1}/${gameInfo.questions.length}</p>
         <p>Category: ${current.category}</p>
+        <p class="timer">Timer: 0</p>
         <p>Difficulty: ${current.difficulty}</p>`
     
     let questionsDiv = document.createElement('div')
@@ -261,16 +293,21 @@ const createQuestion = () => {
     }
     quesCont.appendChild(questionsDiv)
     document.querySelector('main').appendChild(quesCont)
+    doTimer()
     document.querySelector('.question-container').addEventListener('click', (event) => {
         if(event.target.classList[1] == "clickable"){
             checkQuestion(event.target.classList[2].split('quest-')[1])
             gameInfo.currentQuestion++
         }
     })
+    doScoreShow()
 }
 
 const checkQuestion = (data) => {
     let current = gameInfo.questions[gameInfo.currentQuestion]
+    if(data !== false){
+        clearInterval(timerInterval)
+    }
     let correctAns
     for(let i = 0; i < current.question.answer.length; i++){
         if(current.question.answer[i] == current.question.correct){
@@ -288,8 +325,42 @@ const checkQuestion = (data) => {
             div.style.background = `rgb(128, 0, 0)`
         }
     }
+    scoreCalc(correctAns, current, data)
+    let nextQuestion = document.createElement('button')
+    nextQuestion.id = `next-question`
+    nextQuestion.innerHTML = `NEXT QUESTION`
+    document.querySelector('.question-container').appendChild(nextQuestion)
+    document.querySelector('#next-question').addEventListener('click', (event) => {
+        createQuestion()
+    })
+}
+
+const createEndScreen = () => {
+    let totalScore = 0
+    let questionsA = 0
+    for(let i = 0; i < scoreTrack.answeredQ.length; i++){
+        totalScore += scoreTrack.answeredQ[i]
+        if(scoreTrack.answeredQ[i] !== 0){
+            questionsA++
+        }
+    }
+    document.querySelector('main').innerHTML = `
+    <h2 class="score-show"></h2>
+    <h3>Streak: ${scoreTrack.streak}, Longest Streak:(${scoreTrack.lngstS})</h3>
+    <h5>Total Questions Answered: ${questionsA}</h5>`
+    document.querySelector('footer').innerHTML = ``
+    if(questionsA == scoreTrack.answeredQ.length){
+        document.querySelector('.score-show').innerHTML = `Total Score: ${totalScore}, A PERFECT SCORE`
+    }else if(questionsA == 0){
+        document.querySelector('.score-show').innerHTML = `Total Score: ${totalScore}, NOOB`
+    }else{
+        document.querySelector('.score-show').innerHTML = `Total Score: ${totalScore}`
+    }
+}
+
+const scoreCalc = (correct, current, clk_qst) => {
     let audio
-    if(data == correctAns){
+    if(correct == clk_qst && clk_qst !== false){
         let score
         let multiplier
         if(current.difficulty == "hard"){
@@ -300,6 +371,9 @@ const checkQuestion = (data) => {
             multiplier = 1
         }
         scoreTrack.streak++
+        if(scoreTrack.lngstS < scoreTrack.streak){
+            scoreTrack.lngstS = scoreTrack.streak
+        }
         score = 50 * multiplier + (10 * scoreTrack.streak)
         scoreTrack.answeredQ.push(score)
         audio = new Audio('files/sounds/tiq/correct.mp3')
@@ -310,13 +384,6 @@ const checkQuestion = (data) => {
     }
     audio.play()
     doScoreShow()
-    let nextQuestion = document.createElement('button')
-    nextQuestion.id = `next-question`
-    nextQuestion.innerHTML = `NEXT QUESTION`
-    document.querySelector('.question-container').appendChild(nextQuestion)
-    document.querySelector('#next-question').addEventListener('click', (event) => {
-        createQuestion()
-    })
 }
 
 const doScoreShow = () => {
@@ -342,6 +409,7 @@ createSettings()
 document.querySelector('#create-api-text').addEventListener('click', (event) => {
     createQuestions()
 })
+
 document.querySelector('#number-questions').addEventListener('input', (event) => {
     event.target.value = limitInput(event.target.value)
 })
