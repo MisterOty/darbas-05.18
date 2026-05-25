@@ -47,6 +47,7 @@ let gameInfo = {
 
 let scoreTrack = {
     answeredQ: [],
+    score: [0, 0],
     lngstS: 0,
     streak: 0,
 }
@@ -62,7 +63,7 @@ let players = [
     }
 ]
 
-let minMaxQuestions = [1, 50]
+let minMaxQuestions = [5, 20]
 
 let timerTime = 0
 let timerInterval
@@ -149,8 +150,8 @@ const createRoom = () => {
     let titles = ["Number of Questions", "Categories:", "Difficulty:", "Select Type:"]
     let id = ["number-questions", "category", "difficulty", "type"]
     //TEMP FIX: THE API DOESNT HAVE ENOUGH QUESTIONS AND ANSWERS FOR SOME CATEGORIES SO FOR NOW ANY WILL DO
-    // titles = ["Number of Questions", "Difficulty:", "Select Type:"]
-    // id = ["number-questions", "difficulty", "type"]
+    titles = ["Number of Questions", "Difficulty:", "Select Type:"]
+    id = ["number-questions", "difficulty", "type"]
     let childDiv
     let text
     for(let o = 0; o < titles.length; o++){
@@ -206,8 +207,8 @@ const createQuestions = async () => {
     let id = ["number-questions", "category", "difficulty", "type"]
     let suffix = ["amount", "category", "difficulty", "type"]
     //TEMP FIX: THE API DOESNT HAVE ENOUGH QUESTIONS AND ANSWERS FOR SOME CATEGORIES SO FOR NOW ANY WILL DO
-    // id = ["number-questions", "difficulty", "type"]
-    // suffix = ["amount", "difficulty", "type"]
+    id = ["number-questions", "difficulty", "type"]
+    suffix = ["amount", "difficulty", "type"]
     let text
     for(let i = 0; i < id.length; i++){
         if(id[i] == "number-questions"){
@@ -257,15 +258,17 @@ const doGameInfo = (data) => {
     console.log(gameInfo)
 }
 
+//TIMER
+
 const doTimer = () => {
     let current = gameInfo.questions[gameInfo.currentQuestion].difficulty
-    let timer = 15
+    let timer = 10
     if(current == "hard"){
-        timerTime = timer * 3
+        timerTime = timer * 5
     }else if(current == "normal"){
-        timerTime = timer * 2
+        timerTime = timer * 3
     }else{
-        timerTime = timer * 1
+        timerTime = timer * 2
     }
     timerCalc()
     timerInterval = setInterval(() => {
@@ -274,7 +277,7 @@ const doTimer = () => {
 }
 
 const timerCalc = () => {
-    document.querySelector('.timer').innerHTML = `Time: ${timerTime}`
+    document.querySelector('.timer').textContent = `${timerTime}`
     if(timerTime == 0){
         checkQuestion(false)
         clearInterval(timerInterval)
@@ -282,6 +285,8 @@ const timerCalc = () => {
     }
     timerTime--
 }
+
+//GAME ITSELF
 
 const createQuestion = () => {
     if(gameInfo.currentQuestion == gameInfo.questions.length){
@@ -291,14 +296,48 @@ const createQuestion = () => {
     document.querySelector('main').innerHTML = ``
     let current = gameInfo.questions[gameInfo.currentQuestion]
 
+    let showTime = current.question.text.length * 75
+    console.log(showTime)
+
+    let quesCont = document.createElement('div')
+    quesCont.classList.add('pre-question-container')
+    quesCont.innerHTML = `
+        <div class="top-info">
+            <p>Question: ${gameInfo.currentQuestion + 1}/${gameInfo.questions.length}</p>
+        </div>
+        <div class="question-text">
+            <h1>${current.question.text}</h1>
+        </div>
+        <div class="progress-bar"></div>`
+    
+    document.querySelector('main').appendChild(quesCont)
+    let progressBarDiv = document.querySelector('.progress-bar')
+    setTimeout(() => {
+        if(progressBarDiv){
+            progressBarDiv.style.transition = `background-position ${showTime / 1000}s linear`
+            progressBarDiv.style.backgroundPosition = `100% 0%`
+        }
+    }, 10)
+    setTimeout(() => {
+        showQAnswers()
+    }, showTime)
+    // showQAnswers()
+}
+
+const showQAnswers = () => {
+    document.querySelector('main').innerHTML = ``
+    let current = gameInfo.questions[gameInfo.currentQuestion]
+
     let quesCont = document.createElement('div')
     quesCont.classList.add('question-container')
     quesCont.innerHTML = `
-        <h1 question-text>${current.question.text}</h1>
-        <p>Question: ${gameInfo.currentQuestion + 1}/${gameInfo.questions.length}</p>
-        <p>Category: ${current.category}</p>
-        <p class="timer">Timer: 0</p>
-        <p>Difficulty: ${current.difficulty}</p>`
+        <div class="top-info">
+            <h3>Time left:</h3>
+            <div class="timer"></div>
+        </div>
+        <div class="question-text">
+            <h1>${current.question.text}</h1>
+        </div>`
     
     let questionsDiv = document.createElement('div')
     questionsDiv.classList.add('questions')
@@ -352,7 +391,9 @@ const checkQuestion = (data) => {
     })
 }
 
-const showLdrBrd = () => {}
+const showLdrBrd = () => {
+    const main = document.querySelector('main')
+}
 
 const createEndScreen = () => {
     let totalScore = 0
@@ -376,6 +417,8 @@ const createEndScreen = () => {
         document.querySelector('.score-show').innerHTML = `Total Score: ${totalScore}`
     }
 }
+
+//SCORE THING
 
 const scoreCalc = (correct, current, clk_qst) => {
     let audio
@@ -406,11 +449,11 @@ const scoreCalc = (correct, current, clk_qst) => {
 }
 
 const doScoreShow = () => {
-    let totalScore = 0
-    for(let i = 0; i < scoreTrack.answeredQ.length; i++){
-        totalScore += scoreTrack.answeredQ[i]
-    }
-    document.querySelector('footer').innerHTML = `Total Score: ${totalScore}, Streak: ${scoreTrack.streak}`
+    // let totalScore = 0
+    // for(let i = 0; i < scoreTrack.answeredQ.length; i++){
+    //     totalScore += scoreTrack.answeredQ[i]
+    // }
+    // document.querySelector('footer').innerHTML = `Total Score: ${totalScore}`
 }
 
 const limitInput = (num) => {
@@ -424,6 +467,7 @@ const limitInput = (num) => {
 }
 
 createRoom()
+// createQuestions()
 
 document.querySelector('#create-api-text').addEventListener('click', (event) => {
     createQuestions()
