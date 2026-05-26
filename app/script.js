@@ -66,6 +66,7 @@ let players = [
 let minMaxQuestions = [5, 20]
 
 let timerTime = 0
+let timerTimeSnap = 0
 let timerInterval
 
 let credits = {
@@ -124,7 +125,7 @@ let types = [
     ["True or False", "boolean"]
 ]
 
-//API FETCHING FUNCTION
+//MISC FUNCTIONS
 
 const getAPIInfo = async (link) => {
     try{
@@ -138,6 +139,30 @@ const getAPIInfo = async (link) => {
         console.error("Search failed:", error);
     }
 }
+
+const shuffleArray = (array) => {
+    for(let i = array.length - 1; i > 0; i--){
+        const random = Math.floor(Math.random() * (i + 1));
+        [array[i], array[random]] = [array[random], array[i]];
+    }
+    return array;
+}
+
+function doRandomNum(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const limitInput = (num) => {
+    let number = num
+    if(number > minMaxQuestions[1]){
+        number = minMaxQuestions[1]
+    }else if(number < minMaxQuestions[0]){
+        number = minMaxQuestions[0]
+    }
+    return number
+}
+
+//MAIN MENU AND GAME CREATION
 
 // const createStartMenu = () => {
 
@@ -225,14 +250,6 @@ const createQuestions = async () => {
     createQuestion()
 }
 
-const shuffleArray = (array) => {
-    for(let i = array.length - 1; i > 0; i--){
-        const random = Math.floor(Math.random() * (i + 1));
-        [array[i], array[random]] = [array[random], array[i]];
-    }
-    return array;
-}
-
 const doGameInfo = (data) => {
     // gameInfo.gameType = categories[document.querySelector(`#category`).value][0]
     // gameInfo.difficulty = difficulties[document.querySelector(`#difficulty`).value][0]
@@ -258,105 +275,83 @@ const doGameInfo = (data) => {
     console.log(gameInfo)
 }
 
-//TIMER
-
-const doTimer = () => {
-    let current = gameInfo.questions[gameInfo.currentQuestion].difficulty
-    let timer = 10
-    if(current == "hard"){
-        timerTime = timer * 5
-    }else if(current == "normal"){
-        timerTime = timer * 3
-    }else{
-        timerTime = timer * 2
-    }
-    timerCalc()
-    timerInterval = setInterval(() => {
-        timerCalc()
-    }, 1000)
-}
-
-const timerCalc = () => {
-    document.querySelector('.timer').textContent = `${timerTime}`
-    if(timerTime == 0){
-        checkQuestion(false)
-        clearInterval(timerInterval)
-        gameInfo.currentQuestion++
-    }
-    timerTime--
-}
-
-//GAME ITSELF
+//GAME FUNCTIONS
 
 const createQuestion = () => {
     if(gameInfo.currentQuestion == gameInfo.questions.length){
         createEndScreen()
         return
     }
-    document.querySelector('main').innerHTML = ``
-    let current = gameInfo.questions[gameInfo.currentQuestion]
+    const main = document.querySelector('main')
+    main.innerHTML = ``
 
+    let current = gameInfo.questions[gameInfo.currentQuestion]
     let showTime = current.question.text.length * 75
-    console.log(showTime)
-
-    let quesCont = document.createElement('div')
-    quesCont.classList.add('pre-question-container')
-    quesCont.innerHTML = `
-        <div class="top-info">
-            <p>Question: ${gameInfo.currentQuestion + 1}/${gameInfo.questions.length}</p>
-        </div>
-        <div class="question-text">
-            <h1>${current.question.text}</h1>
-        </div>
-        <div class="progress-bar"></div>`
-    
-    document.querySelector('main').appendChild(quesCont)
-    let progressBarDiv = document.querySelector('.progress-bar')
-    setTimeout(() => {
-        if(progressBarDiv){
-            progressBarDiv.style.transition = `background-position ${showTime / 1000}s linear`
-            progressBarDiv.style.backgroundPosition = `100% 0%`
-        }
-    }, 10)
-    setTimeout(() => {
-        showQAnswers()
-    }, showTime)
-    // showQAnswers()
-}
-
-const showQAnswers = () => {
-    document.querySelector('main').innerHTML = ``
-    let current = gameInfo.questions[gameInfo.currentQuestion]
+    let timer = 10
+    if(current.difficulty == "hard"){
+        timerTime = timer * 5
+    }else if(current.difficulty == "normal"){
+        timerTime = timer * 3
+    }else{
+        timerTime = timer * 2
+    }
+    timerTimeSnap = timerTime
 
     let quesCont = document.createElement('div')
     quesCont.classList.add('question-container')
     quesCont.innerHTML = `
         <div class="top-info">
-            <h3>Time left:</h3>
-            <div class="timer"></div>
+            <div class="question-number">
+                <p>Question: ${gameInfo.currentQuestion + 1}/${gameInfo.questions.length}</p>
+            </div>
+            <div class="question-text">
+                <h1>${current.question.text}</h1>
+            </div>
         </div>
-        <div class="question-text">
-            <h1>${current.question.text}</h1>
+        <div class="middle-info"></div>
+        <div class="bottom-info">
+            <div class="timer">${timerTime}</div>
+            <div class="progress-bar"></div>
         </div>`
-    
-    let questionsDiv = document.createElement('div')
-    questionsDiv.classList.add('questions')
+
+    main.appendChild(quesCont)
+
+    let questionsDiv = document.querySelector('.middle-info')
     for(let i = 0; i < current.question.answer.length; i++){
         let question = document.createElement('div')
         question.classList.add('question-query', 'clickable', `quest-${i}`)
         question.innerHTML = `${current.question.answer[i]}`
         questionsDiv.appendChild(question)
+        if(i % 2 == 0){
+            question.style.transform = 'translateX(-100vw)'
+        }else{
+            question.style.transform = 'translateX(100vw)'
+        }
     }
-    quesCont.appendChild(questionsDiv)
-    document.querySelector('main').appendChild(quesCont)
-    doTimer()
+
+    doPBTimer("start", showTime)
+
+    setTimeout(() => {
+        //MOVE QUESTION, PROGRESS BAR AND TIMER
+        document.querySelector('.question-number').style.transform = `translateY(-200px)`
+        document.querySelector('.question-text').style.transform = `translateY(-20px)`
+        document.querySelector('.timer').style.transform = `translateX(0px)`
+        document.querySelector('.progress-bar').style.transform = `skew(-15deg)`
+        //MOVE ANSWERS
+        document.querySelector('.middle-info').querySelectorAll('.clickable').forEach(element => {
+            element.style.transform = 'translateX(0px)'
+        });
+        //FUNCTIONS
+        doPBTimer('countdown')
+        doTimerTick()
+    }, showTime)
+
     document.querySelector('.question-container').addEventListener('click', (event) => {
         if(event.target.classList[1] == "clickable"){
+            console.log(event.target.classList[2].split('-')[1])
             checkQuestion(event.target.classList[2].split('quest-')[1])
-            gameInfo.currentQuestion++
         }
     })
-    doScoreShow()
 }
 
 const checkQuestion = (data) => {
@@ -371,7 +366,7 @@ const checkQuestion = (data) => {
         }
     }
     for(let i = 0; i < current.question.answer.length; i++){
-        let div = document.querySelector('.questions').children[i]
+        let div = document.querySelector('.middle-info').children[i]
         div.classList.toggle('clickable')
         if(i == correctAns){
             // div.style.filter = `hue-rotate(90deg)`
@@ -386,9 +381,78 @@ const checkQuestion = (data) => {
     nextQuestion.id = `next-question`
     nextQuestion.innerHTML = `NEXT QUESTION`
     document.querySelector('.question-container').appendChild(nextQuestion)
+    gameInfo.currentQuestion++
     document.querySelector('#next-question').addEventListener('click', (event) => {
         createQuestion()
     })
+}
+
+const doPBTimer = (type, time) => {
+    let progressBarDiv = document.querySelector('.progress-bar')
+    if(type == "start"){
+        let randomNum = [`${doRandomNum(50, 200)}, 0, 0`, `0, ${doRandomNum(50, 200)}, 0`]
+        progressBarDiv.style.background = `linear-gradient(90deg,rgba(${randomNum[0]}, 1) 0%, rgba(${randomNum[0]}) 50%, rgba(${randomNum[1]}, 1) 50%, rgba(${randomNum[1]}, 1) 100%)`
+        progressBarDiv.style.backgroundSize = `200% 100%`
+        setTimeout(() => {
+            progressBarDiv.style.transition = `transform 0.25s, background-position ${time / 1000}s linear`
+            progressBarDiv.style.backgroundPosition = `100% 0%`
+        }, 10)
+    }else if(type == "countdown"){
+        progressBarDiv.style.transition = `transform 0.25s, background-position 0.5s`
+    }
+}
+
+const doTimer = () => {
+    let current = gameInfo.questions[gameInfo.currentQuestion].difficulty
+    let timer = 10
+    if(current == "hard"){
+        timerTime = timer * 5
+    }else if(current == "normal"){
+        timerTime = timer * 3
+    }else{
+        timerTime = timer * 2
+    }
+}
+
+const doTimerTick = () => {
+    timerInterval = setInterval(() => {
+        let currentPos = 100 - ((timerTimeSnap - timerTime) * (100 / timerTimeSnap))
+        document.querySelector('.timer').textContent = `${timerTime}`
+        document.querySelector('.progress-bar').style.backgroundPosition = `${currentPos}% 0%`
+        if(timerTime == 0){
+            clearInterval(timerInterval)
+            showQAnswers(false)
+            gameInfo.currentQuestion++
+        }
+        timerTime--
+    }, 1000)
+}
+
+const scoreCalc = (correct, current, clk_qst) => {
+    let audio
+    if(correct == clk_qst && clk_qst !== false){
+        let score
+        let multiplier
+        if(current.difficulty == "hard"){
+            multiplier = 3
+        }else if(current.difficulty == "normal"){
+            multiplier = 2
+        }else{
+            multiplier = 1
+        }
+        scoreTrack.streak++
+        if(scoreTrack.lngstS < scoreTrack.streak){
+            scoreTrack.lngstS = scoreTrack.streak
+        }
+        score = 50 * multiplier + (10 * scoreTrack.streak) + (10 * timerTime)
+        scoreTrack.answeredQ.push(score)
+        audio = new Audio('files/sounds/base/correct.mp3')
+    }else{
+        scoreTrack.streak = 0
+        scoreTrack.answeredQ.push(0)
+        audio = new Audio('files/sounds/base/incorrect.mp3')
+    }
+    audio.play()
 }
 
 const showLdrBrd = () => {
@@ -418,56 +482,7 @@ const createEndScreen = () => {
     }
 }
 
-//SCORE THING
-
-const scoreCalc = (correct, current, clk_qst) => {
-    let audio
-    if(correct == clk_qst && clk_qst !== false){
-        let score
-        let multiplier
-        if(current.difficulty == "hard"){
-            multiplier = 3
-        }else if(current.difficulty == "normal"){
-            multiplier = 2
-        }else{
-            multiplier = 1
-        }
-        scoreTrack.streak++
-        if(scoreTrack.lngstS < scoreTrack.streak){
-            scoreTrack.lngstS = scoreTrack.streak
-        }
-        score = 50 * multiplier + (10 * scoreTrack.streak) + (10 * timerTime)
-        scoreTrack.answeredQ.push(score)
-        audio = new Audio('files/sounds/tiq/correct.mp3')
-    }else{
-        scoreTrack.streak = 0
-        scoreTrack.answeredQ.push(0)
-        audio = new Audio('files/sounds/tiq/incorrect.mp3')
-    }
-    audio.play()
-    doScoreShow()
-}
-
-const doScoreShow = () => {
-    // let totalScore = 0
-    // for(let i = 0; i < scoreTrack.answeredQ.length; i++){
-    //     totalScore += scoreTrack.answeredQ[i]
-    // }
-    // document.querySelector('footer').innerHTML = `Total Score: ${totalScore}`
-}
-
-const limitInput = (num) => {
-    let number = num
-    if(number > minMaxQuestions[1]){
-        number = minMaxQuestions[1]
-    }else if(number < minMaxQuestions[0]){
-        number = minMaxQuestions[0]
-    }
-    return number
-}
-
 createRoom()
-// createQuestions()
 
 document.querySelector('#create-api-text').addEventListener('click', (event) => {
     createQuestions()

@@ -29,89 +29,96 @@ main{
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    margin: 15px;
-}
-
-.pre-question-container{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    font-size: 24px;
     padding: 24px;
 }
 
-.question-container{
-    font-size: 24px;
-}
-
-.questions{
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 15px;
-    padding: 24px;
-}
-
-.question-query{
-    flex: 1 1 50%;
-    width: 100%;
-    max-width: 1000px;
-    min-height: 100px;
-    border: 3px solid rgb(0, 0, 0);
-    background: rgb(40, 40, 40);
-    color: white;
-    text-align: center;
-    align-content: center;
-    border-radius: 15px;
-    transition: filter 0.125s;
-}
-
-.clickable:hover{
-    filter: grayscale(1) invert(1);
-    cursor: pointer;
-}
-
-.top-info{
+/* .top-info{
     padding: 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: rgba(255, 255, 255, 0.5);
     font-size: 2vmax;
+} */
+
+.question-container{
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100vh;
+    font-size: 24px;
+    user-select: none;
+    color: white;
+}
+
+.question-container .top-info{
+    padding: 12px;
+    text-align: center;
+}
+
+.question-container .middle-info{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: hidden;
+    gap: 16px;
+}
+
+.question-container .bottom-info{
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+    gap: 25px;
+}
+
+.question-number{
+    position: relative;
+    transition: transform 0.125s;
 }
 
 .question-text{
-    padding: 1vmax;
-    font-size: 1.5vmax;
+    font-size: clamp(1rem, 2vw, 1.5rem);
+    transition: transform 0.25s;
+}
+
+.question-query{
+    transition: filter 0.25s, transform 0.25s;
+    border: 3px solid rgb(0, 0, 0);
+    background: rgb(40, 40, 40);
+    align-content: center;
+    text-align: center;
+    border-radius: 15px;
+    min-height: 100px;
+    max-height: 150px;
+    max-width: 1000px;
+    min-width: 300px;
+    font-size: 24px;
+    width: 100%;
+}
+
+.clickable:hover{
+    filter: opacity(1) grayscale(1) invert(1);
+    cursor: pointer;
 }
 
 .timer{
-    border: 1px solid rgb(0, 0, 0);
-    background: rgb(255, 255, 255);
+    transform: translateX(-200px);
+    transition: transform 0.25s;
     text-align: center;
     align-content: center;
-    border-radius: 1vmax;
-    font-size: 40px;
-    height: 100px;
-    width: 100px;
+    border-radius: 24px;
+    font-size: 24px;
 }
 
 .progress-bar{
-    background: linear-gradient(90deg,rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 1) 50%, rgba(235, 0, 235, 1) 50%, rgba(128, 0, 0, 1) 100%);
     border: 2px solid rgb(50, 50, 50);
-    background-size: 200% 100%;
     background-position: 0% 0%;
-    transform: skew(-15deg);
+    transform: skew(-15deg) translateX(-30px);
     border-radius: 5px;
-    margin: auto;
     height: 24px;
-    width: 90%;
+    width: 90vw;
 }
-
-/* .progress-bar:hover{
-    transition: background-position 1s;
-    background-position: 100% 0%;
-} */
 
 /* IMPOSSIBLE QUIZ THEME */
 
