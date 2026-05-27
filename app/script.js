@@ -57,10 +57,74 @@ let players = [
         name: "Lorem Ipsom",
         scoreTrack: {
             answeredQ: [],
+            score: {
+                currentScore: 0,
+                prevScore: 0,
+            },
             lngstS: 0,
             streak: 0,
         }
-    }
+    },
+    {
+        name: "Loremus Pimpus",
+        scoreTrack: {
+            answeredQ: [],
+            score: {
+                currentScore: 250,
+                prevScore: 250,
+            },
+            lngstS: 0,
+            streak: 4,
+        }
+    },
+    // {
+    //     name: "sdf Pimpus",
+    //     scoreTrack: {
+    //         answeredQ: [],
+    //         score: {
+    //             currentScore: 2134,
+    //             prevScore: 564,
+    //         },
+    //         lngstS: 0,
+    //         streak: 5,
+    //     }
+    // },
+    // {
+    //     name: "sdafs Pimpus",
+    //     scoreTrack: {
+    //         answeredQ: [],
+    //         score: {
+    //             currentScore: 1234,
+    //             prevScore: 654,
+    //         },
+    //         lngstS: 0,
+    //         streak: 1,
+    //     }
+    // },
+    // {
+    //     name: "zxcv Pimpus",
+    //     scoreTrack: {
+    //         answeredQ: [],
+    //         score: {
+    //             currentScore: 2135,
+    //             prevScore: 535,
+    //         },
+    //         lngstS: 0,
+    //         streak: 1,
+    //     }
+    // },
+    // {
+    //     name: "cxzv Pimpus",
+    //     scoreTrack: {
+    //         answeredQ: [],
+    //         score: {
+    //             currentScore: 3453,
+    //             prevScore: 44,
+    //         },
+    //         lngstS: 0,
+    //         streak: 1,
+    //     }
+    // }
 ]
 
 let minMaxQuestions = [5, 20]
@@ -225,6 +289,13 @@ const createRoom = () => {
     createDiv.appendChild(childDiv)
 
     main.appendChild(createDiv)
+    document.querySelector('#create-api-text').addEventListener('click', (event) => {
+        createQuestions()
+    })
+
+    document.querySelector('#number-questions').addEventListener('input', (event) => {
+        event.target.value = limitInput(event.target.value)
+    })
 }
 
 const createQuestions = async () => {
@@ -284,7 +355,7 @@ const createQuestion = () => {
     }
     const main = document.querySelector('main')
     main.innerHTML = ``
-
+    console.log(gameInfo.questions[gameInfo.currentQuestion].question.correct)
     let current = gameInfo.questions[gameInfo.currentQuestion]
     let showTime = current.question.text.length * 75
     let timer = 10
@@ -376,14 +447,16 @@ const checkQuestion = (data) => {
             div.style.background = `rgb(128, 0, 0)`
         }
     }
-    scoreCalc(correctAns, current, data)
+
+    scoreCalc(correctAns, current, data, players[0])
+
+
     let nextQuestion = document.createElement('button')
     nextQuestion.id = `next-question`
     nextQuestion.innerHTML = `NEXT QUESTION`
     document.querySelector('.question-container').appendChild(nextQuestion)
-    gameInfo.currentQuestion++
     document.querySelector('#next-question').addEventListener('click', (event) => {
-        createQuestion()
+        showLdrBrd()
     })
 }
 
@@ -422,14 +495,99 @@ const doTimerTick = () => {
         if(timerTime == 0){
             clearInterval(timerInterval)
             showQAnswers(false)
-            gameInfo.currentQuestion++
         }
         timerTime--
     }, 1000)
 }
 
-const scoreCalc = (correct, current, clk_qst) => {
+const showLdrBrd = () => {
+    const main = document.querySelector('main')
+    main.innerHTML = `<div class="leaderboard"></div>`
+    const ldrbDiv = document.querySelector('.leaderboard')
+    let sortLeaderBoard = []
+    for(let i = 0; i < players.length; i++){
+        sortLeaderBoard.push({
+            listNum: i,
+            score: players[i].scoreTrack.score.currentScore,
+            prevs: players[i].scoreTrack.score.prevScore,
+        })
+    }
+    let sortLeaderBoardPrev = [...sortLeaderBoard];
+    sortLeaderBoard.sort((a, b) => b.score - a.score);
+    sortLeaderBoardPrev.sort((a, b) => b.prevs - a.prevs);
+    console.log(sortLeaderBoard, sortLeaderBoardPrev)
+    for(let i = 0; i < sortLeaderBoard.length; i++){
+        let playerClass = ""
+        let currentPlayer = players[i]
+
+        for(let e = 0; e < currentPlayer.name.split(" ").length; e++){
+            playerClass += currentPlayer.name.split(" ")[e]
+        }
+        ldrbDiv.innerHTML += `
+            <div class="player player-${playerClass}">
+                <div class="name">${currentPlayer.name}</div>
+                <div class="player-score">
+                    <div class="score-list"></div>
+                    <div class="streak">${currentPlayer.scoreTrack.streak}</div>
+                </div>
+            </div>`
+        for(let e = 0; e < currentPlayer.scoreTrack.score.currentScore.toString().length; e++){
+            document.querySelector(`.player-${playerClass} .score-list`).innerHTML += `
+                <div class="score">
+                    <div class="number">
+                        <p>0</p>
+                        <p>1</p>
+                        <p>2</p>
+                        <p>3</p>
+                        <p>4</p>
+                        <p>5</p>
+                        <p>6</p>
+                        <p>7</p>
+                        <p>8</p>
+                        <p>9</p>
+                    </div>
+                </div>`
+        }
+        if(currentPlayer.scoreTrack.streak < 3){
+            document.querySelector(`.player-${playerClass} .streak`).style.opacity = `0`
+        }
+    }
+    sortLdrbrd(sortLeaderBoardPrev, 'prevScore')
+    setTimeout(() => {
+        sortLdrbrd(sortLeaderBoard, 'currentScore')
+    }, 1000);
+    let nextQuestion = document.createElement('button')
+    nextQuestion.id = `next-question`
+    nextQuestion.innerHTML = `NEXT QUESTION`
+    main.appendChild(nextQuestion)
+    gameInfo.currentQuestion++
+    document.querySelector('#next-question').addEventListener('click', (event) => {
+        createQuestion()
+    })
+}
+
+const sortLdrbrd = (leaderboard, score) => {
+    for(let i = 0; i < leaderboard.length; i++){
+        let playerClass = ""
+        let currentPlayer = players[leaderboard[i].listNum]
+        console.log(currentPlayer.name)
+        for(let e = 0; e < currentPlayer.name.split(" ").length; e++){
+            playerClass += currentPlayer.name.split(" ")[e]
+        }
+        document.querySelector(`.player-${playerClass}`).style.transform = `translateY(${i * 7}rem)`
+        doNumDisplay(currentPlayer.scoreTrack.score[score], `player-${playerClass}`)
+    }
+}
+
+const scoreCalc = (correct, current, clk_qst, user) => {
     let audio
+    let playerScore = user.scoreTrack
+    if(playerScore.answeredQ[playerScore.answeredQ.length - 1] !== undefined){
+        playerScore.score.prevScore += playerScore.answeredQ[playerScore.answeredQ.length - 1]
+    }else{
+        playerScore.score.prevScore = 0
+    }
+    console.log(playerScore.answeredQ[playerScore.answeredQ.length - 1])
     if(correct == clk_qst && clk_qst !== false){
         let score
         let multiplier
@@ -440,23 +598,25 @@ const scoreCalc = (correct, current, clk_qst) => {
         }else{
             multiplier = 1
         }
-        scoreTrack.streak++
-        if(scoreTrack.lngstS < scoreTrack.streak){
-            scoreTrack.lngstS = scoreTrack.streak
+        playerScore.streak++
+        if(playerScore.lngstS < playerScore.streak){
+            playerScore.lngstS = playerScore.streak
         }
-        score = 50 * multiplier + (10 * scoreTrack.streak) + (10 * timerTime)
-        scoreTrack.answeredQ.push(score)
+        score = 50 * multiplier + (10 * playerScore.streak) + (10 * timerTime)
+        playerScore.answeredQ.push(score)
         audio = new Audio('files/sounds/base/correct.mp3')
     }else{
-        scoreTrack.streak = 0
-        scoreTrack.answeredQ.push(0)
+        playerScore.streak = 0
+        playerScore.answeredQ.push(0)
         audio = new Audio('files/sounds/base/incorrect.mp3')
     }
+    if(playerScore.answeredQ[playerScore.answeredQ.length - 1] !== undefined){
+        playerScore.score.currentScore += playerScore.answeredQ[playerScore.answeredQ.length - 1]
+    }else{
+        playerScore.score.currentScore = 0
+    }
+    console.log(playerScore.score)
     audio.play()
-}
-
-const showLdrBrd = () => {
-    const main = document.querySelector('main')
 }
 
 const createEndScreen = () => {
@@ -482,12 +642,23 @@ const createEndScreen = () => {
     }
 }
 
+//MAKE A FUNCTION IF NO NUMBER GO TO -1 OF TRANSLATEY
+
+const doNumDisplay = (num, player) => {
+    let number = num.toString().split('')
+    const scoreList = document.querySelector(`.${player} .score-list`);
+    while(number.length < scoreList.children.length){
+        number.unshift(-1);
+    }
+    for (let i = 0; i < scoreList.children.length; i++) {
+        const scoreChild = scoreList.children[i];
+        const numList = scoreChild.querySelector('.number');
+        if(numList){
+            numList.style.transform = `translateY(${(3 * Number(number[i])) * -1}rem)`
+        }
+    }
+}
+
+// showLdrBrd()
+
 createRoom()
-
-document.querySelector('#create-api-text').addEventListener('click', (event) => {
-    createQuestions()
-})
-
-document.querySelector('#number-questions').addEventListener('input', (event) => {
-    event.target.value = limitInput(event.target.value)
-})
